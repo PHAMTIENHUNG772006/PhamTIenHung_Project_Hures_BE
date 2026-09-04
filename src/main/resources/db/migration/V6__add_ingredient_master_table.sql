@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS ingredient_master (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(150) NOT NULL UNIQUE,
+    unit VARCHAR(20) NOT NULL
+);

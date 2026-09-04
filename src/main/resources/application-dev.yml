@@ -1,0 +1,38 @@
+server:
+  port: 8081
+spring:
+  datasource:
+    url: jdbc:postgresql://aws-0-ap-southeast-2.pooler.supabase.com:5432/postgres?sslmode=require
+    username: postgres.cqebkpudxybsalxfjbyi
+    password: Admin77@xyz.com
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      idle-timeout: 30000
+      max-lifetime: 60000
+      connection-timeout: 30000
+      keepalive-time: 30000
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: true
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+redisson:
+  address: "redis://localhost:6379"
+
+jwt:
+  secret: 9a4f2c8d3b7a1e5f8c6d4b2a0e3f5a7c9b8d6e4f2a0b1c3d5e7f9a8b7c6d4e2f
+  expirationMs: 86400000 # 24 hours
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG

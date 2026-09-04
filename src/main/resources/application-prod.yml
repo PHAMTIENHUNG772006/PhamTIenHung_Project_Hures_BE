@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/restaurant_erp}
+    username: ${DATABASE_USER:postgres}
+    password: ${DATABASE_PASS:password}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+redisson:
+  address: ${REDIS_URL:redis://localhost:6379}
+
+jwt:
+  secret: ${JWT_SECRET:9a4f2c8d3b7a1e5f8c6d4b2a0e3f5a7c9b8d6e4f2a0b1c3d5e7f9a8b7c6d4e2f}
+  expirationMs: 86400000
