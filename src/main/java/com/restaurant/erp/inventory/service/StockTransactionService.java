@@ -43,14 +43,14 @@ public class StockTransactionService {
     }
 
     @Transactional
-    public IngredientDto.StockTransactionDto createImport(IngredientDto.StockTransactionDto dto, String userEmail) {
+    public IngredientDto.StockTransactionDto createImport(IngredientDto.StockTransactionDto dto, String userUsername) {
         Integer branchId = getActiveBranchId();
         Branch branch = branchRepository.findById(branchId)
                 .orElseThrow(() -> new ResourceNotFoundException("Branch not found"));
         Ingredient ingredient = ingredientRepository.findById(dto.getIngredientId())
                 .orElseThrow(() -> new ResourceNotFoundException("Ingredient not found"));
         
-        User user = userRepository.findByEmail(userEmail).orElse(null);
+        User user = userRepository.findByUsername(userUsername).orElse(null);
 
         StockTransaction tx = StockTransaction.builder()
                 .branch(branch)

@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
@@ -25,6 +24,11 @@ public class UserController {
     @PostMapping("/api/auth/login")
     public ResponseEntity<ApiResponse<UserDto.AuthResponse>> login(@Valid @RequestBody UserDto.AuthRequest request) {
         return ResponseEntity.ok(ApiResponse.success(userService.login(request), "Login successful"));
+    }
+
+    @PostMapping("/api/auth/refresh")
+    public ResponseEntity<ApiResponse<UserDto.AuthResponse>> refreshToken(@RequestBody UserDto.RefreshTokenRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(userService.refreshToken(request.getRefreshToken()), "Token refreshed successfully"));
     }
 
     @PostMapping("/api/auth/register")
@@ -38,13 +42,13 @@ public class UserController {
     }
 
     @GetMapping("/api/users/{id}")
-    public ResponseEntity<ApiResponse<UserDto>> getUserById(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<UserDto>> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success(userService.getUserById(id)));
     }
 
     @PutMapping("/api/users/{id}")
     public ResponseEntity<ApiResponse<UserDto>> updateUser(
-            @PathVariable UUID id,
+            @PathVariable Long id,
             @Valid @RequestBody UserDto dto) {
         return ResponseEntity.ok(ApiResponse.success(userService.updateUser(id, dto), "User updated successfully"));
     }

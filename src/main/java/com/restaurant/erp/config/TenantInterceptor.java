@@ -15,6 +15,7 @@ public class TenantInterceptor implements HandlerInterceptor {
 
         // Exclude authorization, websockets, and swagger documentation from branch checks
         if (requestURI.startsWith("/api/auth") || 
+            requestURI.startsWith("/api/branches") || 
             requestURI.startsWith("/swagger-ui") || 
             requestURI.startsWith("/v3/api-docs") || 
             requestURI.startsWith("/ws/kds")) {

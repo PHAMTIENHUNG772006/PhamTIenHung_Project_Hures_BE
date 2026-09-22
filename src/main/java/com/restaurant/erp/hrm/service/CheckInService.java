@@ -1,7 +1,6 @@
 package com.restaurant.erp.hrm.service;
 
 import com.restaurant.erp.common.exception.BusinessException;
-import com.restaurant.erp.common.exception.ResourceNotFoundException;
 import com.restaurant.erp.hrm.dto.WorkShiftDto;
 import com.restaurant.erp.hrm.entity.WorkShift;
 import com.restaurant.erp.hrm.repository.WorkShiftRepository;
@@ -11,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -20,7 +18,7 @@ public class CheckInService {
     private final WorkShiftRepository workShiftRepository;
 
     @Transactional
-    public WorkShiftDto checkIn(UUID userId, String method) {
+    public WorkShiftDto checkIn(Long userId, String method) {
         LocalDate today = LocalDate.now();
         WorkShift shift = workShiftRepository.findByUserIdAndShiftDateAndStatus(userId, today, WorkShift.ShiftStatus.SCHEDULED)
                 .orElseThrow(() -> new BusinessException("No scheduled shift found for user today to check in"));
@@ -33,7 +31,7 @@ public class CheckInService {
     }
 
     @Transactional
-    public WorkShiftDto checkOut(UUID userId) {
+    public WorkShiftDto checkOut(Long userId) {
         LocalDate today = LocalDate.now();
         WorkShift shift = workShiftRepository.findByUserIdAndShiftDateAndStatus(userId, today, WorkShift.ShiftStatus.CHECKED_IN)
                 .orElseThrow(() -> new BusinessException("No active checked-in shift found for user today to check out"));

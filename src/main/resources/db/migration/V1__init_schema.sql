@@ -20,13 +20,20 @@ $$ language 'plpgsql';
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS branches (
                                         id BIGSERIAL PRIMARY KEY,
+                                        code VARCHAR(50) NOT NULL,
                                         name VARCHAR(255) NOT NULL,
-    address VARCHAR(255),
-    phone VARCHAR(50),
-    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE, INACTIVE
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
+                                        address VARCHAR(255),
+                                        phone VARCHAR(50),
+                                        email VARCHAR(100),
+                                        tax_code VARCHAR(50),
+                                        image_url VARCHAR(255),
+                                        opening_time TIME,
+                                        closing_time TIME,
+                                        status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+                                        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                        CONSTRAINT uk_branch_code UNIQUE (code)
+);
 
 CREATE TABLE IF NOT EXISTS users (
                                      id BIGSERIAL PRIMARY KEY,

@@ -1,17 +1,14 @@
 package com.restaurant.erp.branch.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import com.restaurant.erp.branch.entity.emuns.BranchStatus;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalTime;
 import java.time.ZonedDateTime;
 
 @Entity
@@ -39,10 +36,29 @@ public class Branch {
     @Column(length = 20)
     private String phone;
 
-    @Column(name = "is_active")
+    @Column(length = 100)
+    private String email;
+
+    @Column(name = "tax_code", length = 50)
+    private String taxCode;
+
+    @Column(name = "opening_time")
+    private LocalTime openingTime;
+
+    @Column(name = "closing_time")
+    private LocalTime closingTime;
+
+    @Column(length = 255)
+    private String image;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 50)
     @Builder.Default
-    private Boolean isActive = true;
+    private BranchStatus status = BranchStatus.ACTIVE;
 
     @Column(name = "created_at", insertable = false, updatable = false)
     private ZonedDateTime createdAt;
+
+    @Column(name = "updated_at", insertable = false, updatable = false)
+    private ZonedDateTime updatedAt;
 }

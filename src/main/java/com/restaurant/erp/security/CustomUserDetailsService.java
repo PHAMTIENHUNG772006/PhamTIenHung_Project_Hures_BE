@@ -18,17 +18,17 @@ public class CustomUserDetailsService implements UserDetailsService {
     private final UserRepository userRepository;
 
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        User user = userRepository.findByUsernameOrEmail(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with username or email: " + username));
 
-        if (!user.getIsActive()) {
-            throw new UsernameNotFoundException("User account is inactive: " + email);
+        if (Boolean.FALSE.equals(user.getIsActive())) {
+            throw new UsernameNotFoundException("User account is inactive: " + username);
         }
 
         return new org.springframework.security.core.userdetails.User(
-                user.getEmail(),
-                user.getPasswordHash(),
+                user.getUsername(),
+                user.getPassword(),
                 Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
         );
     }

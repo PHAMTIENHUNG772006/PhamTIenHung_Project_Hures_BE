@@ -16,10 +16,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.Type;
 
 import java.time.ZonedDateTime;
-import java.util.UUID;
 
 @Entity
 @Table(name = "users")
@@ -31,8 +29,8 @@ import java.util.UUID;
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @ManyToOne
     @JoinColumn(name = "branch_id")
@@ -42,12 +40,12 @@ public class User {
     private String fullName;
 
     @Column(nullable = false, unique = true, length = 150)
-    private String email;
+    private String username;
 
-    @Column(name = "password_hash", nullable = false, length = 255)
-    private String passwordHash;
+    @Column(name = "password", nullable = false, length = 255)
+    private String password;
 
-    @Column(name = "phone_number", length = 20)
+    @Column(name = "phone_number", length = 50)
     private String phoneNumber;
 
     @Enumerated(EnumType.STRING)
@@ -61,18 +59,32 @@ public class User {
     @Builder.Default
     private Boolean isActive = true;
 
+    @Column(name = "status", length = 50)
+    @Builder.Default
+    private String status = "ACTIVE";
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private ZonedDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
     private ZonedDateTime updatedAt;
 
+    public String getPasswordHash() {
+        return this.password;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.password = passwordHash;
+    }
+
     public enum UserRole {
         ADMIN,
+        MANAGER,
         STORE_MANAGER,
         RECEPTIONIST,
         WAITER,
         CHEF,
+        KITCHEN,
         WAREHOUSE_STAFF,
         CASHIER,
         CUSTOMER
