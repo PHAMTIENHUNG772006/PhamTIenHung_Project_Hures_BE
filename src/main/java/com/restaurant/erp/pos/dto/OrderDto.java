@@ -10,7 +10,6 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.UUID;
 
 @Getter
 @Setter
@@ -21,8 +20,8 @@ public class OrderDto {
     private Long id;
     private Integer branchId;
     private Long tableId;
-    private UUID waiterId;
-    private UUID cashierId;
+    private Long waiterId;
+    private Long cashierId;
     private Long bookingId;
     private BigDecimal totalAmount;
     private BigDecimal discountAmount;

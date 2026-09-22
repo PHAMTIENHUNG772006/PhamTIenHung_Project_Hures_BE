@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/hrm/shifts")
@@ -40,13 +39,13 @@ public class WorkShiftController {
 
     @PostMapping("/check-in")
     public ResponseEntity<ApiResponse<WorkShiftDto>> checkIn(
-            @RequestParam UUID userId,
+            @RequestParam Long userId,
             @RequestParam(defaultValue = "FACE_ID") String method) {
         return ResponseEntity.ok(ApiResponse.success(checkInService.checkIn(userId, method), "Checked in successfully"));
     }
 
     @PostMapping("/check-out")
-    public ResponseEntity<ApiResponse<WorkShiftDto>> checkOut(@RequestParam UUID userId) {
+    public ResponseEntity<ApiResponse<WorkShiftDto>> checkOut(@RequestParam Long userId) {
         return ResponseEntity.ok(ApiResponse.success(checkInService.checkOut(userId), "Checked out successfully"));
     }
 }

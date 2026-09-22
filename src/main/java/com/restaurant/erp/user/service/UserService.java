@@ -19,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,15 +33,24 @@ public class UserService {
     private final JwtProvider jwtProvider;
 
     public UserDto.AuthResponse login(UserDto.AuthRequest request) {
+        String rawIdentifier = request.getUsername();
+        if (rawIdentifier == null || rawIdentifier.isBlank()) {
+            rawIdentifier = request.getEmail();
+        }
+        if (rawIdentifier == null || rawIdentifier.isBlank()) {
+            throw new BusinessException("Vui lòng nhập tên đăng nhập hoặc email");
+        }
+        final String identifier = rawIdentifier.trim();
+
+        User user = userRepository.findByUsernameOrEmail(identifier)
+                .orElseThrow(() -> new ResourceNotFoundException("Tài khoản không tồn tại: " + identifier));
+
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+                new UsernamePasswordAuthenticationToken(user.getUsername(), request.getPassword())
         );
 
-        UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
+        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
         String jwtToken = jwtProvider.generateToken(userDetails);
-
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         return UserDto.AuthResponse.builder()
                 .token(jwtToken)
@@ -50,10 +58,37 @@ public class UserService {
                 .build();
     }
 
+    public UserDto.AuthResponse refreshToken(String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new BusinessException("Refresh token is required");
+        }
+        String username = jwtProvider.extractUsername(refreshToken);
+        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        if (!jwtProvider.validateToken(refreshToken, userDetails)) {
+            throw new BusinessException("Invalid or expired refresh token");
+        }
+        String newToken = jwtProvider.generateToken(userDetails);
+        User user = userRepository.findByUsernameOrEmail(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
+        return UserDto.AuthResponse.builder()
+                .token(newToken)
+                .user(mapToDto(user))
+                .build();
+    }
+
     @Transactional
     public UserDto register(UserDto.RegisterRequest request) {
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new BusinessException("Email already exists: " + request.getEmail());
+        String rawIdentifier = request.getUsername();
+        if (rawIdentifier == null || rawIdentifier.isBlank()) {
+            rawIdentifier = request.getEmail();
+        }
+        if (rawIdentifier == null || rawIdentifier.isBlank()) {
+            throw new BusinessException("Vui lòng nhập tên đăng nhập hoặc email");
+        }
+        final String identifier = rawIdentifier.trim();
+
+        if (userRepository.findByUsernameOrEmail(identifier).isPresent()) {
+            throw new BusinessException("Tên đăng nhập đã tồn tại: " + identifier);
         }
 
         Branch branch = null;
@@ -62,15 +97,17 @@ public class UserService {
                     .orElseThrow(() -> new ResourceNotFoundException("Branch not found with id: " + request.getBranchId()));
         }
 
+        String encodedPassword = passwordEncoder.encode(request.getPassword());
         User user = User.builder()
                 .branch(branch)
                 .fullName(request.getFullName())
-                .email(request.getEmail())
-                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .username(identifier)
+                .password(encodedPassword)
                 .phoneNumber(request.getPhoneNumber())
                 .role(request.getRole() != null ? request.getRole() : User.UserRole.CUSTOMER)
                 .pinCode(request.getPinCode())
                 .isActive(true)
+                .status("ACTIVE")
                 .createdAt(ZonedDateTime.now())
                 .updatedAt(ZonedDateTime.now())
                 .build();
@@ -84,14 +121,14 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
-    public UserDto getUserById(UUID id) {
+    public UserDto getUserById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
         return mapToDto(user);
     }
 
     @Transactional
-    public UserDto updateUser(UUID id, UserDto dto) {
+    public UserDto updateUser(Long id, UserDto dto) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
         
@@ -103,6 +140,7 @@ public class UserService {
         }
         if (dto.getIsActive() != null) {
             user.setIsActive(dto.getIsActive());
+            user.setStatus(dto.getIsActive() ? "ACTIVE" : "INACTIVE");
         }
         user.setUpdatedAt(ZonedDateTime.now());
 
@@ -117,15 +155,18 @@ public class UserService {
 
     public UserDto mapToDto(User user) {
         if (user == null) return null;
+        String email = user.getUsername().contains("@") ? user.getUsername() : (user.getUsername() + "@restaurant.com");
         return UserDto.builder()
                 .id(user.getId())
-                .branchId(user.getBranch() != null ? user.getBranch().getId() : null)
+                .branchId(user.getBranch() != null ? user.getBranch().getId() : 1)
                 .fullName(user.getFullName())
-                .email(user.getEmail())
+                .username(user.getUsername())
+                .email(email)
                 .phoneNumber(user.getPhoneNumber())
                 .role(user.getRole())
                 .pinCode(user.getPinCode())
                 .isActive(user.getIsActive())
+                .status(user.getStatus())
                 .build();
     }
 }

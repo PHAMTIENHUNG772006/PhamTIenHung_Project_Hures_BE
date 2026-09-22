@@ -60,6 +60,10 @@ public class StockTransaction {
         IMPORT,
         EXPORT_ORDER,
         EXPORT_WASTE,
-        ADJUSTMENT
+        ADJUSTMENT,
+        DAILY_ISSUE,
+        DAILY_RETURN,
+        WASTE_DISCREPANCY,
+        CENTRAL_KITCHEN_TRANSFER
     }
 }
