@@ -18,8 +18,17 @@ public class TableDto {
     private Integer areaId;
     private String areaName;
     private String tableNumber;
+    private String name; // Tương thích 2 chiều với frontend name/tableNumber
     private Integer capacity;
     private TableStatus status;
+
+    public String getName() {
+        return name != null && !name.isEmpty() ? name : tableNumber;
+    }
+
+    public String getTableNumber() {
+        return tableNumber != null && !tableNumber.isEmpty() ? tableNumber : name;
+    }
 
     @Getter
     @Setter

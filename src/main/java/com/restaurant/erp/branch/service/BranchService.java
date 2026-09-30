@@ -1,6 +1,8 @@
 package com.restaurant.erp.branch.service;
 
+import com.restaurant.erp.branch.dto.BranchCreateRequest;
 import com.restaurant.erp.branch.dto.BranchDto;
+import com.restaurant.erp.branch.dto.BranchResponse;
 import com.restaurant.erp.branch.entity.Branch;
 import com.restaurant.erp.branch.entity.emuns.BranchStatus;
 import com.restaurant.erp.branch.repository.BranchRepository;
@@ -28,6 +30,51 @@ public class BranchService {
         Branch branch = branchRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Branch not found with id: " + id));
         return mapToDto(branch);
+    }
+
+    @Transactional
+    public BranchResponse createBranch(BranchCreateRequest request) {
+        String code = request.getCode();
+        if (code == null || code.trim().isEmpty()) {
+            long nextNum = branchRepository.count() + 1;
+            String candidate = String.format("CN%02d", nextNum);
+            while (branchRepository.findByCode(candidate).isPresent()) {
+                nextNum++;
+                candidate = String.format("CN%02d", nextNum);
+            }
+            code = candidate;
+        } else {
+            code = code.trim().toUpperCase();
+            if (branchRepository.findByCode(code).isPresent()) {
+                long nextNum = branchRepository.count() + 1;
+                String candidate = String.format("%s_%02d", code, nextNum);
+                while (branchRepository.findByCode(candidate).isPresent()) {
+                    nextNum++;
+                    candidate = String.format("%s_%02d", code, nextNum);
+                }
+                code = candidate;
+            }
+        }
+
+        BranchStatus status = request.getStatus();
+        if (status == null) {
+            status = BranchStatus.ACTIVE;
+        }
+
+        Branch branch = Branch.builder()
+                .code(code)
+                .name(request.getName().trim())
+                .address(request.getAddress().trim())
+                .phone(request.getPhone().trim())
+                .email(request.getEmail() != null && !request.getEmail().trim().isEmpty() ? request.getEmail().trim() : null)
+                .taxCode(request.getTaxCode() != null && !request.getTaxCode().trim().isEmpty() ? request.getTaxCode().trim() : null)
+                .openingTime(request.getOpeningTime())
+                .closingTime(request.getClosingTime())
+                .image(request.getImage())
+                .status(status)
+                .build();
+        Branch saved = branchRepository.save(branch);
+        return mapToResponse(saved, request.getManagerName(), request.getTotalTables());
     }
 
     @Transactional
@@ -153,6 +200,32 @@ public class BranchService {
                 .image(branch.getImage())
                 .status(branch.getStatus())
                 .isActive(branch.getStatus() == BranchStatus.ACTIVE)
+                .createdAt(branch.getCreatedAt())
+                .updatedAt(branch.getUpdatedAt())
+                .build();
+    }
+
+    public BranchResponse mapToResponse(Branch branch) {
+        return mapToResponse(branch, null, null);
+    }
+
+    public BranchResponse mapToResponse(Branch branch, String managerName, Integer totalTables) {
+        if (branch == null) return null;
+        return BranchResponse.builder()
+                .id(branch.getId())
+                .code(branch.getCode())
+                .name(branch.getName())
+                .address(branch.getAddress())
+                .phone(branch.getPhone())
+                .email(branch.getEmail())
+                .taxCode(branch.getTaxCode())
+                .openingTime(branch.getOpeningTime())
+                .closingTime(branch.getClosingTime())
+                .image(branch.getImage())
+                .status(branch.getStatus())
+                .isActive(branch.getStatus() == BranchStatus.ACTIVE)
+                .managerName(managerName)
+                .totalTables(totalTables != null ? totalTables : 20)
                 .createdAt(branch.getCreatedAt())
                 .updatedAt(branch.getUpdatedAt())
                 .build();

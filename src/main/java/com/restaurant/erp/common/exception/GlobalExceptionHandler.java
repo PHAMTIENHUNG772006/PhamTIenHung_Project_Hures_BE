@@ -28,17 +28,30 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(ex.getMessage()));
     }
 
+    @ExceptionHandler(com.restaurant.erp.exceptions.GlobalException.class)
+    public ResponseEntity<ApiResponse<Void>> handleGlobalCustomException(com.restaurant.erp.exceptions.GlobalException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationExceptions(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
+        Map<String, String> errors = new java.util.LinkedHashMap<>();
         ex.getBindingResult().getAllErrors().forEach((error) -> {
-            String fieldName = ((FieldError) error).getField();
-            String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage);
+            if (error instanceof FieldError fieldError) {
+                String fieldName = fieldError.getField();
+                if ("openingTimeBeforeClosingTime".equalsIgnoreCase(fieldName)) {
+                    fieldName = "closingTime";
+                }
+                errors.put(fieldName, fieldError.getDefaultMessage());
+            } else {
+                errors.put(error.getObjectName(), error.getDefaultMessage());
+            }
         });
         ApiResponse<Map<String, String>> response = ApiResponse.<Map<String, String>>builder()
                 .success(false)
-                .message("Validation failed")
+                .message("Dữ liệu đầu vào không hợp lệ. Vui lòng kiểm tra lại các trường.")
                 .data(errors)
                 .build();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);

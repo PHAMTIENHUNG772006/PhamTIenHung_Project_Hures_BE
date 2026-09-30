@@ -1,6 +1,8 @@
 package com.restaurant.erp.branch.controller;
 
+import com.restaurant.erp.branch.dto.BranchCreateRequest;
 import com.restaurant.erp.branch.dto.BranchDto;
+import com.restaurant.erp.branch.dto.BranchResponse;
 import com.restaurant.erp.branch.service.BranchService;
 import com.restaurant.erp.common.response.ApiResponse;
 import com.restaurant.erp.common.service.CloudinaryService;
@@ -37,9 +39,9 @@ public class BranchController {
     }
 
     @PostMapping
-    @Operation(summary = "Create a new branch")
-    public ResponseEntity<ApiResponse<BranchDto>> createBranch(@Valid @RequestBody BranchDto dto) {
-        return ResponseEntity.ok(ApiResponse.success(branchService.createBranch(dto), "Tạo chi nhánh thành công"));
+    @Operation(summary = "Create a new branch with validation")
+    public ResponseEntity<ApiResponse<BranchResponse>> createBranch(@Valid @RequestBody BranchCreateRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(branchService.createBranch(request), "Tạo chi nhánh thành công"));
     }
 
     @PutMapping("/{id}")
