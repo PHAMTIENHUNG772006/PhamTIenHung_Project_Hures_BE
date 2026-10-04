@@ -1,8 +1,9 @@
 package com.restaurant.erp.branch.service;
 
-import com.restaurant.erp.branch.dto.BranchCreateRequest;
 import com.restaurant.erp.branch.dto.BranchDto;
-import com.restaurant.erp.branch.dto.BranchResponse;
+import com.restaurant.erp.branch.dto.request.BranchCreateRequest;
+import com.restaurant.erp.branch.dto.request.BranchUpdateRequest;
+import com.restaurant.erp.branch.dto.response.BranchResponse;
 import com.restaurant.erp.branch.entity.Branch;
 import com.restaurant.erp.branch.entity.emuns.BranchStatus;
 import com.restaurant.erp.branch.repository.BranchRepository;
@@ -20,10 +21,22 @@ public class BranchService {
 
     private final BranchRepository branchRepository;
 
+    public List<BranchResponse> getAllBranchResponses() {
+        return branchRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
     public List<BranchDto> getAllBranches() {
         return branchRepository.findAll().stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
+    }
+
+    public BranchResponse getBranchResponseById(Integer id) {
+        Branch branch = branchRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Branch not found with id: " + id));
+        return mapToResponse(branch);
     }
 
     public BranchDto getBranchById(Integer id) {
@@ -119,6 +132,32 @@ public class BranchService {
                 .status(status)
                 .build();
         return mapToDto(branchRepository.save(branch));
+    }
+
+    @Transactional
+    public BranchResponse updateBranch(Integer id, BranchUpdateRequest request) {
+        Branch branch = branchRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Branch not found with id: " + id));
+
+        if (request.getName() != null) branch.setName(request.getName().trim());
+        if (request.getAddress() != null) branch.setAddress(request.getAddress().trim());
+        if (request.getPhone() != null) branch.setPhone(request.getPhone().trim());
+        if (request.getEmail() != null) branch.setEmail(request.getEmail().trim());
+        if (request.getTaxCode() != null) branch.setTaxCode(request.getTaxCode().trim());
+        if (request.getOpeningTime() != null) branch.setOpeningTime(request.getOpeningTime());
+        if (request.getClosingTime() != null) branch.setClosingTime(request.getClosingTime());
+        if (request.getImage() != null) branch.setImage(request.getImage());
+
+        if (request.getCode() != null && !request.getCode().trim().isEmpty()) {
+            branch.setCode(request.getCode().trim().toUpperCase());
+        }
+
+        if (request.getStatus() != null) {
+            branch.setStatus(request.getStatus());
+        }
+
+        Branch saved = branchRepository.save(branch);
+        return mapToResponse(saved, request.getManagerName(), request.getTotalTables());
     }
 
     @Transactional

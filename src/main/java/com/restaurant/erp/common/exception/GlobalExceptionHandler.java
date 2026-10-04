@@ -57,11 +57,42 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Map<String, String>>> handleConstraintViolation(jakarta.validation.ConstraintViolationException ex) {
+        Map<String, String> errors = new java.util.LinkedHashMap<>();
+        ex.getConstraintViolations().forEach(violation -> {
+            String propertyPath = violation.getPropertyPath().toString();
+            String fieldName = propertyPath.substring(propertyPath.lastIndexOf('.') + 1);
+            errors.put(fieldName, violation.getMessage());
+        });
+        ApiResponse<Map<String, String>> response = ApiResponse.<Map<String, String>>builder()
+                .success(false)
+                .message("Dữ liệu tham số không hợp lệ.")
+                .data(errors)
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Map<String, String>>> handleTypeMismatch(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException ex) {
+        Map<String, String> errors = new java.util.LinkedHashMap<>();
+        String name = ex.getName();
+        String requiredType = ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "không xác định";
+        errors.put(name, String.format("Giá trị '%s' không đúng định dạng kiểu %s", ex.getValue(), requiredType));
+
+        ApiResponse<Map<String, String>> response = ApiResponse.<Map<String, String>>builder()
+                .success(false)
+                .message("Tham số đường dẫn hoặc query không đúng định dạng.")
+                .data(errors)
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
     @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
     public ResponseEntity<ApiResponse<Void>> handleMessageNotReadable(org.springframework.http.converter.HttpMessageNotReadableException ex) {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error("Dữ liệu đầu vào không hợp lệ (JSON parse error): " + ex.getMostSpecificCause().getMessage()));
+                .body(ApiResponse.error("Dữ liệu gửi lên không đúng định dạng JSON: " + (ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : ex.getMessage())));
     }
 
     @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
@@ -75,6 +106,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleGeneral(Exception ex) {
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("An unexpected error occurred: " + ex.getMessage()));
+                .body(ApiResponse.error("Đã xảy ra lỗi hệ thống: " + ex.getMessage()));
     }
 }

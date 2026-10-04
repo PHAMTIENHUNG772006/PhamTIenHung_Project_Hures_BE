@@ -2,6 +2,8 @@ package com.restaurant.erp.inventory.controller;
 
 import com.restaurant.erp.common.response.ApiResponse;
 import com.restaurant.erp.inventory.dto.IngredientDto;
+import com.restaurant.erp.inventory.dto.request.CreateStockTransactionRequest;
+import com.restaurant.erp.inventory.dto.response.StockTransactionResponse;
 import com.restaurant.erp.inventory.service.StockTransactionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,15 +26,15 @@ public class StockController {
     private final StockTransactionService stockTransactionService;
 
     @GetMapping("/transactions")
-    public ResponseEntity<ApiResponse<List<IngredientDto.StockTransactionDto>>> getTransactions() {
-        return ResponseEntity.ok(ApiResponse.success(stockTransactionService.getTransactions()));
+    public ResponseEntity<ApiResponse<List<StockTransactionResponse>>> getTransactions() {
+        return ResponseEntity.ok(ApiResponse.success(stockTransactionService.getStockTransactionResponses()));
     }
 
     @PostMapping("/import")
-    public ResponseEntity<ApiResponse<IngredientDto.StockTransactionDto>> createImport(
-            @Valid @RequestBody IngredientDto.StockTransactionDto dto,
+    public ResponseEntity<ApiResponse<StockTransactionResponse>> createImport(
+            @Valid @RequestBody CreateStockTransactionRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
         String email = userDetails != null ? userDetails.getUsername() : "system@restaurant.com";
-        return ResponseEntity.ok(ApiResponse.success(stockTransactionService.createImport(dto, email), "Import transaction recorded successfully"));
+        return ResponseEntity.ok(ApiResponse.success(stockTransactionService.createImport(request, email), "Import transaction recorded successfully"));
     }
 }

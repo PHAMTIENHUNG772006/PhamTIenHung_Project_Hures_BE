@@ -1,7 +1,9 @@
 package com.restaurant.erp.inventory.controller;
 
 import com.restaurant.erp.common.response.ApiResponse;
-import com.restaurant.erp.inventory.dto.DailyAllocationDto;
+import com.restaurant.erp.inventory.dto.request.CreateDailyAllocationBatchRequest;
+import com.restaurant.erp.inventory.dto.request.ReconcileDailyAllocationBatchRequest;
+import com.restaurant.erp.inventory.dto.response.DailyAllocationResponse;
 import com.restaurant.erp.inventory.service.DailyAllocationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,18 +23,18 @@ public class DailyAllocationController {
     private final DailyAllocationService dailyAllocationService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<DailyAllocationDto.Response>>> getAllocations(
+    public ResponseEntity<ApiResponse<List<DailyAllocationResponse>>> getAllocations(
             @RequestParam Integer branchId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         return ResponseEntity.ok(ApiResponse.success(
-                dailyAllocationService.getAllocations(branchId, date),
+                dailyAllocationService.getAllocationResponses(branchId, date),
                 "Daily kitchen allocations retrieved"
         ));
     }
 
     @PostMapping("/batch")
-    public ResponseEntity<ApiResponse<List<DailyAllocationDto.Response>>> createBatch(
-            @Valid @RequestBody DailyAllocationDto.CreateBatchRequest request) {
+    public ResponseEntity<ApiResponse<List<DailyAllocationResponse>>> createBatch(
+            @Valid @RequestBody CreateDailyAllocationBatchRequest request) {
         return ResponseEntity.ok(ApiResponse.success(
                 dailyAllocationService.createBatchAllocation(request),
                 "Daily kitchen allocations created successfully"
@@ -40,8 +42,8 @@ public class DailyAllocationController {
     }
 
     @PostMapping("/reconcile")
-    public ResponseEntity<ApiResponse<List<DailyAllocationDto.Response>>> reconcileBatch(
-            @Valid @RequestBody DailyAllocationDto.ReconcileBatchRequest request) {
+    public ResponseEntity<ApiResponse<List<DailyAllocationResponse>>> reconcileBatch(
+            @Valid @RequestBody ReconcileDailyAllocationBatchRequest request) {
         return ResponseEntity.ok(ApiResponse.success(
                 dailyAllocationService.reconcileBatch(request),
                 "Daily kitchen reconciliation completed and returned to warehouse"

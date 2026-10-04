@@ -3,8 +3,15 @@ package com.restaurant.erp.table.service;
 import com.restaurant.erp.branch.entity.Branch;
 import com.restaurant.erp.branch.repository.BranchRepository;
 import com.restaurant.erp.common.context.BranchContext;
+import com.restaurant.erp.common.exception.BusinessException;
 import com.restaurant.erp.common.exception.ResourceNotFoundException;
 import com.restaurant.erp.table.dto.TableDto;
+import com.restaurant.erp.table.dto.request.CreateAreaRequest;
+import com.restaurant.erp.table.dto.request.CreateTableRequest;
+import com.restaurant.erp.table.dto.request.UpdateAreaRequest;
+import com.restaurant.erp.table.dto.request.UpdateTableRequest;
+import com.restaurant.erp.table.dto.response.AreaResponse;
+import com.restaurant.erp.table.dto.response.TableResponse;
 import com.restaurant.erp.table.entity.Area;
 import com.restaurant.erp.table.entity.DiningTable;
 import com.restaurant.erp.table.repository.AreaRepository;
@@ -28,7 +35,6 @@ public class TableService {
     private Integer getActiveBranchId() {
         Integer branchId = BranchContext.getCurrentBranchId();
         if (branchId == null) {
-            // Default to first branch if context is not explicitly provided
             return branchRepository.findAll().stream().findFirst().map(Branch::getId).orElse(1);
         }
         return branchId;
@@ -42,6 +48,21 @@ public class TableService {
     }
 
     @Transactional(readOnly = true)
+    public List<AreaResponse> getAreaResponses() {
+        Branch branch = getBranch();
+        List<Area> areas = areaRepository.findByBranchId(branch.getId());
+        return areas.stream().map(area -> {
+            int count = tableRepository.findByBranchIdAndAreaId(branch.getId(), area.getId()).size();
+            return AreaResponse.builder()
+                    .id(area.getId())
+                    .branchId(branch.getId())
+                    .name(area.getName())
+                    .tableCount(count)
+                    .build();
+        }).collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public List<TableDto.AreaDto> getAreas() {
         Branch branch = getBranch();
         List<Area> areas = areaRepository.findByBranchId(branch.getId());
@@ -49,21 +70,68 @@ public class TableService {
     }
 
     @Transactional
-    public TableDto.AreaDto createArea(TableDto.AreaDto dto) {
+    public AreaResponse createArea(CreateAreaRequest request) {
         Branch branch = getBranch();
+        String areaName = request.getName() != null ? request.getName().trim() : "";
+        if (areaRepository.findByBranchId(branch.getId()).stream()
+                .anyMatch(a -> a.getName().equalsIgnoreCase(areaName))) {
+            throw new BusinessException("Tên khu vực đã tồn tại trong chi nhánh này");
+        }
+
         Area area = Area.builder()
                 .branch(branch)
-                .name(dto.getName())
+                .name(areaName)
                 .build();
-        return mapAreaToDto(areaRepository.save(area));
+        Area saved = areaRepository.save(area);
+        return AreaResponse.builder()
+                .id(saved.getId())
+                .branchId(branch.getId())
+                .name(saved.getName())
+                .tableCount(0)
+                .build();
+    }
+
+    @Transactional
+    public TableDto.AreaDto createArea(TableDto.AreaDto dto) {
+        CreateAreaRequest req = CreateAreaRequest.builder().name(dto.getName()).build();
+        AreaResponse res = createArea(req);
+        return TableDto.AreaDto.builder()
+                .id(res.getId())
+                .branchId(res.getBranchId())
+                .name(res.getName())
+                .build();
+    }
+
+    @Transactional
+    public AreaResponse updateArea(Integer id, UpdateAreaRequest request) {
+        Area area = areaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Area not found with id: " + id));
+        String areaName = request.getName() != null ? request.getName().trim() : "";
+        if (areaRepository.findByBranchId(area.getBranch().getId()).stream()
+                .anyMatch(a -> !a.getId().equals(id) && a.getName().equalsIgnoreCase(areaName))) {
+            throw new BusinessException("Tên khu vực đã tồn tại trong chi nhánh này");
+        }
+
+        area.setName(areaName);
+        Area saved = areaRepository.save(area);
+        int count = tableRepository.findByBranchIdAndAreaId(area.getBranch().getId(), saved.getId()).size();
+        return AreaResponse.builder()
+                .id(saved.getId())
+                .branchId(area.getBranch().getId())
+                .name(saved.getName())
+                .tableCount(count)
+                .build();
     }
 
     @Transactional
     public TableDto.AreaDto updateArea(Integer id, TableDto.AreaDto dto) {
-        Area area = areaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Area not found with id: " + id));
-        area.setName(dto.getName());
-        return mapAreaToDto(areaRepository.save(area));
+        UpdateAreaRequest req = UpdateAreaRequest.builder().name(dto.getName()).build();
+        AreaResponse res = updateArea(id, req);
+        return TableDto.AreaDto.builder()
+                .id(res.getId())
+                .branchId(res.getBranchId())
+                .name(res.getName())
+                .build();
     }
 
     @Transactional
@@ -77,6 +145,15 @@ public class TableService {
     }
 
     @Transactional(readOnly = true)
+    public List<TableResponse> getTableResponses(Integer areaId) {
+        Branch branch = getBranch();
+        List<DiningTable> tables = (areaId != null)
+                ? tableRepository.findByBranchIdAndAreaId(branch.getId(), areaId)
+                : tableRepository.findByBranchId(branch.getId());
+        return tables.stream().map(this::mapToTableResponse).collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public List<TableDto> getTables(Integer areaId) {
         Branch branch = getBranch();
         List<DiningTable> tables = (areaId != null)
@@ -86,51 +163,84 @@ public class TableService {
     }
 
     @Transactional
-    public TableDto createTable(TableDto dto) {
+    public TableResponse createTable(CreateTableRequest request) {
         Branch branch = getBranch();
-        Area area = areaRepository.findById(dto.getAreaId())
-                .orElseThrow(() -> new ResourceNotFoundException("Area not found with id: " + dto.getAreaId()));
+        Area area = areaRepository.findById(request.getAreaId())
+                .orElseThrow(() -> new ResourceNotFoundException("Area not found with id: " + request.getAreaId()));
 
-        String tableNumber = (dto.getTableNumber() != null && !dto.getTableNumber().trim().isEmpty())
-                ? dto.getTableNumber().trim()
-                : (dto.getName() != null && !dto.getName().trim().isEmpty() ? dto.getName().trim() : "Bàn mới");
+        String tableNumber = request.getName();
+
+        if (tableRepository.findByBranchIdAndAreaId(branch.getId(), area.getId()).stream()
+                .anyMatch(t -> t.getTableNumber().equalsIgnoreCase(tableNumber))) {
+            throw new BusinessException("Tên bàn đã tồn tại trong khu vực này");
+        }
 
         DiningTable table = DiningTable.builder()
                 .branch(branch)
                 .area(area)
                 .tableNumber(tableNumber)
-                .capacity(dto.getCapacity() != null ? dto.getCapacity() : 4)
-                .status(dto.getStatus() != null ? dto.getStatus() : DiningTable.TableStatus.AVAILABLE)
+                .capacity(request.getCapacity() != null ? request.getCapacity() : 4)
+                .status(request.getStatus() != null ? request.getStatus() : DiningTable.TableStatus.AVAILABLE)
                 .build();
 
-        return mapTableToDto(tableRepository.save(table));
+        return mapToTableResponse(tableRepository.save(table));
+    }
+
+    @Transactional
+    public TableDto createTable(TableDto dto) {
+        CreateTableRequest req = CreateTableRequest.builder()
+                .areaId(dto.getAreaId())
+                .name(dto.getName())
+                .tableNumber(dto.getTableNumber())
+                .capacity(dto.getCapacity())
+                .status(dto.getStatus())
+                .build();
+        TableResponse res = createTable(req);
+        return mapTableToDto(tableRepository.findById(res.getId()).orElse(null));
+    }
+
+    @Transactional
+    public TableResponse updateTable(Integer id, UpdateTableRequest request) {
+        DiningTable table = tableRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Table not found with id: " + id));
+
+        String newTableNumber = request.getName();
+
+        if (request.getAreaId() != null && !request.getAreaId().equals(table.getArea().getId())) {
+            Area newArea = areaRepository.findById(request.getAreaId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Area not found with id: " + request.getAreaId()));
+            table.setArea(newArea);
+        }
+
+        if (newTableNumber != null && !newTableNumber.trim().isEmpty()) {
+            Integer targetAreaId = table.getArea().getId();
+            if (tableRepository.findByBranchIdAndAreaId(table.getBranch().getId(), targetAreaId).stream()
+                    .anyMatch(t -> !t.getId().equals(id) && t.getTableNumber().equalsIgnoreCase(newTableNumber))) {
+                throw new BusinessException("Tên bàn đã tồn tại trong khu vực này");
+            }
+            table.setTableNumber(newTableNumber);
+        }
+        if (request.getCapacity() != null && request.getCapacity() > 0) {
+            table.setCapacity(request.getCapacity());
+        }
+        if (request.getStatus() != null) {
+            table.setStatus(request.getStatus());
+        }
+
+        return mapToTableResponse(tableRepository.save(table));
     }
 
     @Transactional
     public TableDto updateTable(Integer id, TableDto dto) {
-        DiningTable table = tableRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Table not found with id: " + id));
-
-        String newTableNumber = (dto.getTableNumber() != null && !dto.getTableNumber().trim().isEmpty())
-                ? dto.getTableNumber().trim()
-                : (dto.getName() != null && !dto.getName().trim().isEmpty() ? dto.getName().trim() : null);
-
-        if (newTableNumber != null) {
-            table.setTableNumber(newTableNumber);
-        }
-        if (dto.getCapacity() != null && dto.getCapacity() > 0) {
-            table.setCapacity(dto.getCapacity());
-        }
-        if (dto.getAreaId() != null && !dto.getAreaId().equals(table.getArea().getId())) {
-            Area newArea = areaRepository.findById(dto.getAreaId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Area not found with id: " + dto.getAreaId()));
-            table.setArea(newArea);
-        }
-        if (dto.getStatus() != null) {
-            table.setStatus(dto.getStatus());
-        }
-
-        return mapTableToDto(tableRepository.save(table));
+        UpdateTableRequest req = UpdateTableRequest.builder()
+                .areaId(dto.getAreaId())
+                .name(dto.getName())
+                .tableNumber(dto.getTableNumber())
+                .capacity(dto.getCapacity())
+                .status(dto.getStatus())
+                .build();
+        TableResponse res = updateTable(id, req);
+        return mapTableToDto(tableRepository.findById(res.getId()).orElse(null));
     }
 
     @Transactional
@@ -141,11 +251,26 @@ public class TableService {
     }
 
     @Transactional
-    public TableDto updateTableStatus(Integer tableId, DiningTable.TableStatus status) {
+    public TableResponse updateTableStatus(Integer tableId, DiningTable.TableStatus status) {
         DiningTable table = tableRepository.findById(tableId)
                 .orElseThrow(() -> new ResourceNotFoundException("Table not found with id: " + tableId));
         table.setStatus(status);
-        return mapTableToDto(tableRepository.save(table));
+        return mapToTableResponse(tableRepository.save(table));
+    }
+
+    public TableResponse mapToTableResponse(DiningTable table) {
+        if (table == null) return null;
+        return TableResponse.builder()
+                .id(table.getId())
+                .branchId(table.getBranch().getId())
+                .areaId(table.getArea().getId())
+                .areaName(table.getArea().getName())
+                .tableNumber(table.getTableNumber())
+                .name(table.getTableNumber())
+                .capacity(table.getCapacity())
+                .status(table.getStatus())
+                .createdAt(table.getCreatedAt())
+                .build();
     }
 
     public TableDto mapTableToDto(DiningTable table) {

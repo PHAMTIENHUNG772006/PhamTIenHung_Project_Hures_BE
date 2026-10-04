@@ -1,8 +1,9 @@
 package com.restaurant.erp.branch.controller;
 
-import com.restaurant.erp.branch.dto.BranchCreateRequest;
 import com.restaurant.erp.branch.dto.BranchDto;
-import com.restaurant.erp.branch.dto.BranchResponse;
+import com.restaurant.erp.branch.dto.request.BranchCreateRequest;
+import com.restaurant.erp.branch.dto.request.BranchUpdateRequest;
+import com.restaurant.erp.branch.dto.response.BranchResponse;
 import com.restaurant.erp.branch.service.BranchService;
 import com.restaurant.erp.common.response.ApiResponse;
 import com.restaurant.erp.common.service.CloudinaryService;
@@ -46,10 +47,10 @@ public class BranchController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Update branch details")
-    public ResponseEntity<ApiResponse<BranchDto>> updateBranch(
+    public ResponseEntity<ApiResponse<BranchResponse>> updateBranch(
             @PathVariable Integer id,
-            @Valid @RequestBody BranchDto dto) {
-        return ResponseEntity.ok(ApiResponse.success(branchService.updateBranch(id, dto), "Cập nhật chi nhánh thành công"));
+            @Valid @RequestBody BranchUpdateRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(branchService.updateBranch(id, request), "Cập nhật chi nhánh thành công"));
     }
 
     @PostMapping(value = "/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

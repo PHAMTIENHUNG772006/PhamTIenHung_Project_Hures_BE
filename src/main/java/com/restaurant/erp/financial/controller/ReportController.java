@@ -1,7 +1,7 @@
 package com.restaurant.erp.financial.controller;
 
 import com.restaurant.erp.common.response.ApiResponse;
-import com.restaurant.erp.financial.dto.FinancialReportDto;
+import com.restaurant.erp.financial.dto.response.FinancialReportResponse;
 import com.restaurant.erp.financial.service.FinancialReportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +19,7 @@ public class ReportController {
     private final FinancialReportService financialReportService;
 
     @GetMapping("/daily-summary")
-    public ResponseEntity<ApiResponse<List<FinancialReportDto>>> getDailyFinancialSummary() {
-        return ResponseEntity.ok(ApiResponse.success(financialReportService.getDailyFinancialSummary()));
+    public ResponseEntity<ApiResponse<List<FinancialReportResponse>>> getDailyFinancialSummary() {
+        return ResponseEntity.ok(ApiResponse.success(financialReportService.getDailyFinancialSummaryResponses()));
     }
 }

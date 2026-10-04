@@ -1,7 +1,8 @@
 package com.restaurant.erp.hrm.controller;
 
 import com.restaurant.erp.common.response.ApiResponse;
-import com.restaurant.erp.hrm.dto.WorkShiftDto;
+import com.restaurant.erp.hrm.dto.request.ScheduleShiftRequest;
+import com.restaurant.erp.hrm.dto.response.WorkShiftResponse;
 import com.restaurant.erp.hrm.service.CheckInService;
 import com.restaurant.erp.hrm.service.ShiftSchedulingService;
 import jakarta.validation.Valid;
@@ -27,25 +28,25 @@ public class WorkShiftController {
     private final CheckInService checkInService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<WorkShiftDto>>> getShiftsForDate(
+    public ResponseEntity<ApiResponse<List<WorkShiftResponse>>> getShiftsForDate(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        return ResponseEntity.ok(ApiResponse.success(shiftSchedulingService.getShiftsForDate(date)));
+        return ResponseEntity.ok(ApiResponse.success(shiftSchedulingService.getShiftResponsesForDate(date)));
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<WorkShiftDto>> scheduleShift(@Valid @RequestBody WorkShiftDto dto) {
-        return ResponseEntity.ok(ApiResponse.success(shiftSchedulingService.scheduleShift(dto), "Shift scheduled successfully"));
+    public ResponseEntity<ApiResponse<WorkShiftResponse>> scheduleShift(@Valid @RequestBody ScheduleShiftRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(shiftSchedulingService.scheduleShift(request), "Shift scheduled successfully"));
     }
 
     @PostMapping("/check-in")
-    public ResponseEntity<ApiResponse<WorkShiftDto>> checkIn(
+    public ResponseEntity<ApiResponse<WorkShiftResponse>> checkIn(
             @RequestParam Long userId,
             @RequestParam(defaultValue = "FACE_ID") String method) {
-        return ResponseEntity.ok(ApiResponse.success(checkInService.checkIn(userId, method), "Checked in successfully"));
+        return ResponseEntity.ok(ApiResponse.success(checkInService.checkInResponse(userId, method), "Checked in successfully"));
     }
 
     @PostMapping("/check-out")
-    public ResponseEntity<ApiResponse<WorkShiftDto>> checkOut(@RequestParam Long userId) {
-        return ResponseEntity.ok(ApiResponse.success(checkInService.checkOut(userId), "Checked out successfully"));
+    public ResponseEntity<ApiResponse<WorkShiftResponse>> checkOut(@RequestParam Long userId) {
+        return ResponseEntity.ok(ApiResponse.success(checkInService.checkOutResponse(userId), "Checked out successfully"));
     }
 }

@@ -2,6 +2,7 @@ package com.restaurant.erp.financial.service;
 
 import com.restaurant.erp.common.context.BranchContext;
 import com.restaurant.erp.financial.dto.FinancialReportDto;
+import com.restaurant.erp.financial.dto.response.FinancialReportResponse;
 import com.restaurant.erp.financial.entity.DailyFinancialSummary;
 import com.restaurant.erp.financial.repository.DailyFinancialSummaryRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,10 +25,27 @@ public class FinancialReportService {
         return branchId;
     }
 
+    public List<FinancialReportResponse> getDailyFinancialSummaryResponses() {
+        return dailyFinancialSummaryRepository.findByBranchId(getActiveBranchId()).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
     public List<FinancialReportDto> getDailyFinancialSummary() {
         return dailyFinancialSummaryRepository.findByBranchId(getActiveBranchId()).stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
+    }
+
+    public FinancialReportResponse mapToResponse(DailyFinancialSummary sum) {
+        return FinancialReportResponse.builder()
+                .branchId(sum.getBranchId())
+                .reportDate(sum.getReportDate())
+                .totalOrders(sum.getTotalOrders())
+                .grossRevenue(sum.getGrossRevenue())
+                .totalFoodCost(sum.getTotalFoodCost())
+                .foodCostPercentage(sum.getFoodCostPercentage())
+                .build();
     }
 
     private FinancialReportDto mapToDto(DailyFinancialSummary sum) {

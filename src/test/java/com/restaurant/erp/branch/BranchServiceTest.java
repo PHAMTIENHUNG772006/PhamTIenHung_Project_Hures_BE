@@ -1,8 +1,8 @@
 package com.restaurant.erp.branch;
 
-import com.restaurant.erp.branch.dto.BranchCreateRequest;
 import com.restaurant.erp.branch.dto.BranchDto;
-import com.restaurant.erp.branch.dto.BranchResponse;
+import com.restaurant.erp.branch.dto.request.BranchCreateRequest;
+import com.restaurant.erp.branch.dto.response.BranchResponse;
 import com.restaurant.erp.branch.entity.emuns.BranchStatus;
 import com.restaurant.erp.branch.service.BranchService;
 import org.junit.jupiter.api.Test;
