@@ -1,14 +1,15 @@
 server:
   port: 8081
+
 spring:
   datasource:
-    url: jdbc:postgresql://aws-0-ap-southeast-2.pooler.supabase.com:5432/postgres?sslmode=require
-    username: postgres.cqebkpudxybsalxfjbyi
-    password: Admin77@xyz.com
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/restaurant_erp}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgrespassword}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 5
-      minimum-idle: 1
+      maximum-pool-size: 10
+      minimum-idle: 2
       idle-timeout: 30000
       max-lifetime: 60000
       connection-timeout: 30000
@@ -28,7 +29,7 @@ spring:
     repair-on-migrate: true
 
 redisson:
-  address: "redis://localhost:6379"
+  address: ${REDISSON_ADDRESS:redis://localhost:6379}
 
 jwt:
   secret: 9a4f2c8d3b7a1e5f8c6d4b2a0e3f5a7c9b8d6e4f2a0b1c3d5e7f9a8b7c6d4e2f

@@ -1,6 +1,8 @@
 package com.restaurant.erp.branch;
 
 import com.restaurant.erp.branch.dto.BranchDto;
+import com.restaurant.erp.branch.dto.request.BranchCreateRequest;
+import com.restaurant.erp.branch.dto.response.BranchResponse;
 import com.restaurant.erp.branch.entity.emuns.BranchStatus;
 import com.restaurant.erp.branch.service.BranchService;
 import org.junit.jupiter.api.Test;
@@ -18,6 +20,35 @@ public class BranchServiceTest {
 
     @Autowired
     private BranchService branchService;
+
+    @Test
+    void testCreateBranchWithDtoRequestAndResponse() {
+        BranchCreateRequest request = BranchCreateRequest.builder()
+                .code("CN_TEST")
+                .name("Chi nhánh Test Cầu Giấy")
+                .address("123 Cầu Giấy, Quan Hoa, Hà Nội")
+                .phone("0912345678")
+                .email("caugiay@restaurant.vn")
+                .taxCode("0101234567")
+                .openingTime(LocalTime.of(8, 0))
+                .closingTime(LocalTime.of(22, 30))
+                .status(BranchStatus.ACTIVE)
+                .managerName("Trần Văn B")
+                .totalTables(30)
+                .build();
+
+        BranchResponse response = branchService.createBranch(request);
+        assertNotNull(response);
+        assertNotNull(response.getId());
+        assertEquals("Chi nhánh Test Cầu Giấy", response.getName());
+        assertEquals("0912345678", response.getPhone());
+        assertEquals("caugiay@restaurant.vn", response.getEmail());
+        assertEquals(BranchStatus.ACTIVE, response.getStatus());
+        assertTrue(response.getIsActive());
+        assertEquals(30, response.getTotalTables());
+        assertNotNull(response.getCode());
+        System.out.println(">>> CREATED BRANCH RESPONSE: " + response.getId() + " - " + response.getCode() + " - " + response.getStatus());
+    }
 
     @Test
     void testCreateBranchWithMaintenance() {

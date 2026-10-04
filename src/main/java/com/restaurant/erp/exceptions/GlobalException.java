@@ -1,5 +1,12 @@
 package com.restaurant.erp.exceptions;
 
+public class GlobalException extends RuntimeException {
 
-public class GlobalException {
+    public GlobalException(String message) {
+        super(message);
+    }
+
+    public GlobalException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

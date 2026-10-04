@@ -6,6 +6,9 @@ import com.restaurant.erp.common.context.BranchContext;
 import com.restaurant.erp.common.exception.BusinessException;
 import com.restaurant.erp.common.exception.ResourceNotFoundException;
 import com.restaurant.erp.reservation.dto.BookingDto;
+import com.restaurant.erp.reservation.dto.request.CreateBookingRequest;
+import com.restaurant.erp.reservation.dto.request.UpdateBookingRequest;
+import com.restaurant.erp.reservation.dto.response.BookingResponse;
 import com.restaurant.erp.reservation.entity.Booking;
 import com.restaurant.erp.reservation.repository.BookingRepository;
 import com.restaurant.erp.table.entity.DiningTable;
@@ -33,15 +36,60 @@ public class BookingService {
     private Integer getActiveBranchId() {
         Integer branchId = BranchContext.getCurrentBranchId();
         if (branchId == null) {
-            throw new RuntimeException("Branch context is not set");
+            return branchRepository.findAll().stream().findFirst().map(Branch::getId).orElse(1);
         }
         return branchId;
+    }
+
+    public List<BookingResponse> getBookingResponses() {
+        return bookingRepository.findByBranchId(getActiveBranchId()).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 
     public List<BookingDto> getBookings() {
         return bookingRepository.findByBranchId(getActiveBranchId()).stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public BookingResponse createBooking(CreateBookingRequest request) {
+        Integer branchId = request.getBranchId() != null ? request.getBranchId() : getActiveBranchId();
+        
+        String bookingDateStr = request.getBookingTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        boolean locked = tableLockService.lockTable(request.getTableId(), bookingDateStr, 5, 10);
+        if (!locked) {
+            throw new BusinessException("Bàn ăn hiện đang có người thao tác hoặc đang bị khóa. Vui lòng thử lại sau.");
+        }
+
+        try {
+            Branch branch = branchRepository.findById(branchId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Chi nhánh không tồn tại"));
+            DiningTable table = tableRepository.findById(request.getTableId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Bàn ăn không tồn tại"));
+            User customer = null;
+            if (request.getCustomerId() != null) {
+                customer = userRepository.findById(request.getCustomerId()).orElse(null);
+            }
+
+            Booking booking = Booking.builder()
+                    .branch(branch)
+                    .table(table)
+                    .customer(customer)
+                    .customerName(request.getCustomerName().trim())
+                    .customerPhone(request.getCustomerPhone().trim())
+                    .bookingTime(request.getBookingTime())
+                    .partySize(request.getPartySize())
+                    .depositAmount(request.getDepositAmount())
+                    .status(Booking.BookingStatus.PENDING)
+                    .specialRequest(request.getSpecialRequest())
+                    .build();
+
+            return mapToResponse(bookingRepository.save(booking));
+        } finally {
+            tableLockService.unlockTable(request.getTableId(), bookingDateStr);
+        }
     }
 
     @Transactional
@@ -84,6 +132,23 @@ public class BookingService {
     }
 
     @Transactional
+    public BookingResponse updateBookingStatus(Long id, Booking.BookingStatus status) {
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + id));
+        booking.setStatus(status);
+        
+        if (status == Booking.BookingStatus.SEATED && booking.getTable() != null) {
+            booking.getTable().setStatus(DiningTable.TableStatus.OCCUPIED);
+            tableRepository.save(booking.getTable());
+        } else if (status == Booking.BookingStatus.CANCELLED && booking.getTable() != null) {
+            booking.getTable().setStatus(DiningTable.TableStatus.AVAILABLE);
+            tableRepository.save(booking.getTable());
+        }
+        
+        return mapToResponse(bookingRepository.save(booking));
+    }
+
+    @Transactional
     public BookingDto updateStatus(Long id, Booking.BookingStatus status) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + id));
@@ -98,6 +163,25 @@ public class BookingService {
         }
         
         return mapToDto(bookingRepository.save(booking));
+    }
+
+    public BookingResponse mapToResponse(Booking booking) {
+        if (booking == null) return null;
+        return BookingResponse.builder()
+                .id(booking.getId())
+                .branchId(booking.getBranch().getId())
+                .customerId(booking.getCustomer() != null ? booking.getCustomer().getId() : null)
+                .tableId(booking.getTable() != null ? booking.getTable().getId() : null)
+                .tableNumber(booking.getTable() != null ? booking.getTable().getTableNumber() : null)
+                .customerName(booking.getCustomerName())
+                .customerPhone(booking.getCustomerPhone())
+                .bookingTime(booking.getBookingTime())
+                .partySize(booking.getPartySize())
+                .depositAmount(booking.getDepositAmount())
+                .status(booking.getStatus())
+                .specialRequest(booking.getSpecialRequest())
+                .createdAt(booking.getCreatedAt())
+                .build();
     }
 
     private BookingDto mapToDto(Booking booking) {

@@ -30,15 +30,37 @@ public class JwtProvider {
 
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, userDetails.getUsername());
+        return createToken(claims, userDetails.getUsername(), jwtProperties.getExpirationMs());
+    }
+
+    public String generateRefreshToken(UserDetails userDetails) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("type", "REFRESH");
+        long refreshExpiration = jwtProperties.getExpirationMs() > 0 
+                ? jwtProperties.getExpirationMs() * 7 
+                : 7 * 24 * 60 * 60 * 1000L;
+        return createToken(claims, userDetails.getUsername(), refreshExpiration);
+    }
+
+    public String generateRefreshToken(String username) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("type", "REFRESH");
+        long refreshExpiration = jwtProperties.getExpirationMs() > 0 
+                ? jwtProperties.getExpirationMs() * 7 
+                : 7 * 24 * 60 * 60 * 1000L;
+        return createToken(claims, username, refreshExpiration);
     }
 
     private String createToken(Map<String, Object> claims, String subject) {
+        return createToken(claims, subject, jwtProperties.getExpirationMs());
+    }
+
+    private String createToken(Map<String, Object> claims, String subject, long expirationMs) {
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getExpirationMs()))
+                .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }

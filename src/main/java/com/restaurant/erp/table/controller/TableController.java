@@ -1,81 +1,90 @@
 package com.restaurant.erp.table.controller;
 
 import com.restaurant.erp.common.response.ApiResponse;
-import com.restaurant.erp.table.dto.TableDto;
+import com.restaurant.erp.table.dto.request.CreateAreaRequest;
+import com.restaurant.erp.table.dto.request.CreateTableRequest;
+import com.restaurant.erp.table.dto.request.UpdateAreaRequest;
+import com.restaurant.erp.table.dto.request.UpdateTableRequest;
+import com.restaurant.erp.table.dto.response.AreaResponse;
+import com.restaurant.erp.table.dto.response.TableResponse;
 import com.restaurant.erp.table.entity.DiningTable.TableStatus;
 import com.restaurant.erp.table.service.TableService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/tables")
 @RequiredArgsConstructor
+@Tag(name = "Table & Area Management", description = "APIs for restaurant tables and areas")
 public class TableController {
 
     private final TableService tableService;
 
     @GetMapping("/areas")
-    public ResponseEntity<ApiResponse<List<TableDto.AreaDto>>> getAreas() {
-        return ResponseEntity.ok(ApiResponse.success(tableService.getAreas()));
+    @Operation(summary = "Lấy danh sách các khu vực bàn ăn")
+    public ResponseEntity<ApiResponse<List<AreaResponse>>> getAreas() {
+        return ResponseEntity.ok(ApiResponse.success(tableService.getAreaResponses()));
     }
 
     @PostMapping("/areas")
-    public ResponseEntity<ApiResponse<TableDto.AreaDto>> createArea(@Valid @RequestBody TableDto.AreaDto dto) {
-        return ResponseEntity.ok(ApiResponse.success(tableService.createArea(dto), "Area created successfully"));
+    @Operation(summary = "Tạo khu vực bàn ăn mới")
+    public ResponseEntity<ApiResponse<AreaResponse>> createArea(@Valid @RequestBody CreateAreaRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(tableService.createArea(request), "Tạo khu vực thành công"));
     }
 
     @PutMapping("/areas/{id}")
-    public ResponseEntity<ApiResponse<TableDto.AreaDto>> updateArea(
+    @Operation(summary = "Cập nhật tên khu vực bàn ăn")
+    public ResponseEntity<ApiResponse<AreaResponse>> updateArea(
             @PathVariable Integer id,
-            @Valid @RequestBody TableDto.AreaDto dto) {
-        return ResponseEntity.ok(ApiResponse.success(tableService.updateArea(id, dto), "Area updated successfully"));
+            @Valid @RequestBody UpdateAreaRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(tableService.updateArea(id, request), "Cập nhật khu vực thành công"));
     }
 
     @DeleteMapping("/areas/{id}")
+    @Operation(summary = "Xóa khu vực bàn ăn")
     public ResponseEntity<ApiResponse<Void>> deleteArea(@PathVariable Integer id) {
         tableService.deleteArea(id);
-        return ResponseEntity.ok(ApiResponse.success(null, "Area deleted successfully"));
+        return ResponseEntity.ok(ApiResponse.success(null, "Xóa khu vực thành công"));
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<TableDto>>> getTables(@RequestParam(required = false) Integer areaId) {
-        return ResponseEntity.ok(ApiResponse.success(tableService.getTables(areaId)));
+    @Operation(summary = "Lấy danh sách bàn ăn (có thể lọc theo khu vực)")
+    public ResponseEntity<ApiResponse<List<TableResponse>>> getTables(@RequestParam(required = false) Integer areaId) {
+        return ResponseEntity.ok(ApiResponse.success(tableService.getTableResponses(areaId)));
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<TableDto>> createTable(@Valid @RequestBody TableDto dto) {
-        return ResponseEntity.ok(ApiResponse.success(tableService.createTable(dto), "Table created successfully"));
+    @Operation(summary = "Tạo bàn ăn mới với validation")
+    public ResponseEntity<ApiResponse<TableResponse>> createTable(@Valid @RequestBody CreateTableRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(tableService.createTable(request), "Tạo bàn ăn thành công"));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<TableDto>> updateTable(
+    @Operation(summary = "Cập nhật thông tin bàn ăn")
+    public ResponseEntity<ApiResponse<TableResponse>> updateTable(
             @PathVariable Integer id,
-            @Valid @RequestBody TableDto dto) {
-        return ResponseEntity.ok(ApiResponse.success(tableService.updateTable(id, dto), "Table updated successfully"));
+            @Valid @RequestBody UpdateTableRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(tableService.updateTable(id, request), "Cập nhật bàn ăn thành công"));
     }
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "Xóa bàn ăn")
     public ResponseEntity<ApiResponse<Void>> deleteTable(@PathVariable Integer id) {
         tableService.deleteTable(id);
-        return ResponseEntity.ok(ApiResponse.success(null, "Table deleted successfully"));
+        return ResponseEntity.ok(ApiResponse.success(null, "Xóa bàn ăn thành công"));
     }
 
     @PutMapping("/{id}/status")
-    public ResponseEntity<ApiResponse<TableDto>> updateTableStatus(
+    @Operation(summary = "Cập nhật trạng thái bàn ăn (available, occupied, reserved, cleaning)")
+    public ResponseEntity<ApiResponse<TableResponse>> updateTableStatus(
             @PathVariable Integer id,
             @RequestParam TableStatus status) {
-        return ResponseEntity.ok(ApiResponse.success(tableService.updateTableStatus(id, status), "Table status updated successfully"));
+        return ResponseEntity.ok(ApiResponse.success(tableService.updateTableStatus(id, status), "Cập nhật trạng thái bàn ăn thành công"));
     }
 }

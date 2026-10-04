@@ -7,6 +7,12 @@ import com.restaurant.erp.common.exception.ResourceNotFoundException;
 import com.restaurant.erp.security.CustomUserDetailsService;
 import com.restaurant.erp.security.jwt.JwtProvider;
 import com.restaurant.erp.user.dto.UserDto;
+import com.restaurant.erp.user.dto.request.LoginRequest;
+import com.restaurant.erp.user.dto.request.RefreshTokenRequest;
+import com.restaurant.erp.user.dto.request.RegisterRequest;
+import com.restaurant.erp.user.dto.request.UpdateUserRequest;
+import com.restaurant.erp.user.dto.response.AuthResponse;
+import com.restaurant.erp.user.dto.response.UserResponse;
 import com.restaurant.erp.user.entity.User;
 import com.restaurant.erp.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +37,127 @@ public class UserService {
     private final AuthenticationManager authenticationManager;
     private final CustomUserDetailsService userDetailsService;
     private final JwtProvider jwtProvider;
+
+    public AuthResponse loginUser(LoginRequest request) {
+        String identifier = request.getIdentifier();
+        if (identifier == null || identifier.isBlank()) {
+            throw new BusinessException("Vui lòng nhập tên đăng nhập hoặc email");
+        }
+
+        User user = userRepository.findByUsernameOrEmail(identifier)
+                .orElseThrow(() -> new ResourceNotFoundException("Tài khoản không tồn tại: " + identifier));
+
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(user.getUsername(), request.getPassword())
+        );
+
+        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
+        String jwtToken = jwtProvider.generateToken(userDetails);
+        String refreshToken = jwtProvider.generateRefreshToken(userDetails);
+
+        return AuthResponse.builder()
+                .token(jwtToken)
+                .refreshToken(refreshToken)
+                .user(mapToResponse(user))
+                .build();
+    }
+
+    public AuthResponse refreshTokenUser(RefreshTokenRequest request) {
+        String token = request.getRefreshToken();
+        if (token == null || token.isBlank()) {
+            throw new BusinessException("Refresh token không được để trống");
+        }
+        String username = jwtProvider.extractUsername(token);
+        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        if (!jwtProvider.validateToken(token, userDetails)) {
+            throw new BusinessException("Refresh token không hợp lệ hoặc đã hết hạn");
+        }
+        String newToken = jwtProvider.generateToken(userDetails);
+        User user = userRepository.findByUsernameOrEmail(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại: " + username));
+        return AuthResponse.builder()
+                .token(newToken)
+                .refreshToken(token)
+                .user(mapToResponse(user))
+                .build();
+    }
+
+    @Transactional
+    public UserResponse registerUser(RegisterRequest request) {
+        String identifier = request.getUsername();
+        if (identifier == null || identifier.isBlank()) {
+            throw new BusinessException("Vui lòng nhập tên đăng nhập hoặc email");
+        }
+
+        if (userRepository.findByUsernameOrEmail(identifier).isPresent()) {
+            throw new BusinessException("Tên đăng nhập đã tồn tại: " + identifier);
+        }
+
+        Branch branch = null;
+        if (request.getBranchId() != null) {
+            branch = branchRepository.findById(request.getBranchId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Branch not found with id: " + request.getBranchId()));
+        }
+
+        String encodedPassword = passwordEncoder.encode(request.getPassword());
+        User user = User.builder()
+                .branch(branch)
+                .fullName(request.getFullName().trim())
+                .username(identifier)
+                .password(encodedPassword)
+                .phoneNumber(request.getPhoneNumber() != null ? request.getPhoneNumber().trim() : null)
+                .role(request.getRole() != null ? request.getRole() : User.UserRole.CUSTOMER)
+                .pinCode(request.getPinCode())
+                .isActive(true)
+                .status("ACTIVE")
+                .createdAt(ZonedDateTime.now())
+                .updatedAt(ZonedDateTime.now())
+                .build();
+
+        return mapToResponse(userRepository.save(user));
+    }
+
+    public List<UserResponse> getAllUserResponses() {
+        return userRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public UserResponse getUserResponseById(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        return mapToResponse(user);
+    }
+
+    @Transactional
+    public UserResponse updateUser(Long id, UpdateUserRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+
+        user.setFullName(request.getFullName().trim());
+        if (request.getPhoneNumber() != null) {
+            user.setPhoneNumber(request.getPhoneNumber().trim());
+        }
+        if (request.getPinCode() != null) {
+            user.setPinCode(request.getPinCode().trim());
+        }
+        if (request.getRole() != null) {
+            user.setRole(request.getRole());
+        }
+        if (request.getIsActive() != null) {
+            user.setIsActive(request.getIsActive());
+            user.setStatus(request.getIsActive() ? "ACTIVE" : "INACTIVE");
+        }
+        user.setUpdatedAt(ZonedDateTime.now());
+
+        if (request.getBranchId() != null) {
+            Branch branch = branchRepository.findById(request.getBranchId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Branch not found with id: " + request.getBranchId()));
+            user.setBranch(branch);
+        }
+
+        return mapToResponse(userRepository.save(user));
+    }
 
     public UserDto.AuthResponse login(UserDto.AuthRequest request) {
         String rawIdentifier = request.getUsername();
@@ -151,6 +278,25 @@ public class UserService {
         }
 
         return mapToDto(userRepository.save(user));
+    }
+
+    public UserResponse mapToResponse(User user) {
+        if (user == null) return null;
+        String email = user.getUsername().contains("@") ? user.getUsername() : (user.getUsername() + "@restaurant.com");
+        return UserResponse.builder()
+                .id(user.getId())
+                .branchId(user.getBranch() != null ? user.getBranch().getId() : 1)
+                .branchName(user.getBranch() != null ? user.getBranch().getName() : "Hệ Thống Trung Tâm")
+                .fullName(user.getFullName())
+                .username(user.getUsername())
+                .email(email)
+                .phoneNumber(user.getPhoneNumber())
+                .role(user.getRole())
+                .isActive(user.getIsActive())
+                .status(user.getStatus())
+                .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
+                .build();
     }
 
     public UserDto mapToDto(User user) {

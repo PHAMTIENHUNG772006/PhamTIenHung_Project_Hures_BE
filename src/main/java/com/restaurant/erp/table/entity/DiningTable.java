@@ -20,7 +20,7 @@ import lombok.Setter;
 import java.time.ZonedDateTime;
 
 @Entity
-@Table(name = "tables")
+@Table(name = "dining_tables")
 @Getter
 @Setter
 @NoArgsConstructor
