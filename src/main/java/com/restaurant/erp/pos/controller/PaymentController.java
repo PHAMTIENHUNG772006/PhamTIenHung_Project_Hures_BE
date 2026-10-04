@@ -1,5 +1,6 @@
 package com.restaurant.erp.pos.controller;
 
+import com.restaurant.erp.common.annotation.Idempotent;
 import com.restaurant.erp.common.response.ApiResponse;
 import com.restaurant.erp.pos.dto.request.ProcessPaymentRequest;
 import com.restaurant.erp.pos.dto.response.PaymentResponse;
@@ -22,7 +23,8 @@ public class PaymentController {
 
     private final PaymentService paymentService;
 
-    @PostMapping
+    @PostMapping({"", "/process"})
+    @Idempotent
     @Operation(summary = "Thanh toán hóa đơn đơn hàng với validation")
     public ResponseEntity<ApiResponse<PaymentResponse>> processPayment(@Valid @RequestBody ProcessPaymentRequest request) {
         return ResponseEntity.ok(ApiResponse.success(paymentService.processPayment(request), "Thanh toán thành công"));

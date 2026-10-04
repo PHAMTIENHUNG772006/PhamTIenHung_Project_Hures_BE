@@ -1,6 +1,7 @@
 package com.restaurant.erp.inventory.entity;
 
 import com.restaurant.erp.branch.entity.Branch;
+import com.restaurant.erp.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
@@ -18,7 +19,7 @@ import java.time.ZonedDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class DailyIngredientAllocation {
+public class DailyIngredientAllocation extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -73,6 +74,11 @@ public class DailyIngredientAllocation {
     @Column(name = "created_at")
     @Builder.Default
     private ZonedDateTime createdAt = ZonedDateTime.now();
+
+    @Version
+    @Column(name = "version", nullable = false)
+    @Builder.Default
+    private Integer version = 0;
 
     @Column(name = "updated_at")
     @Builder.Default

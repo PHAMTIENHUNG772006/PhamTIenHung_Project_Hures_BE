@@ -16,6 +16,10 @@ import com.restaurant.erp.inventory.repository.IngredientRepository;
 import com.restaurant.erp.inventory.repository.StockTransactionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import jakarta.persistence.OptimisticLockException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -250,6 +254,11 @@ public class DailyAllocationService {
     }
 
     @Transactional
+    @Retryable(
+        retryFor = {OptimisticLockException.class, ObjectOptimisticLockingFailureException.class},
+        maxAttempts = 3,
+        backoff = @Backoff(delay = 100, multiplier = 2)
+    )
     public void recordConsumption(Integer branchId, Integer ingredientId, LocalDate date, Double quantityUsed) {
         LocalDate targetDate = (date != null) ? date : LocalDate.now();
         allocationRepository.findByBranchIdAndIngredientIdAndAllocationDate(branchId, ingredientId, targetDate)
@@ -261,6 +270,11 @@ public class DailyAllocationService {
     }
 
     @Transactional
+    @Retryable(
+        retryFor = {OptimisticLockException.class, ObjectOptimisticLockingFailureException.class},
+        maxAttempts = 3,
+        backoff = @Backoff(delay = 100, multiplier = 2)
+    )
     public List<DailyAllocationResponse> reconcileBatch(ReconcileDailyAllocationBatchRequest request) {
         List<DailyIngredientAllocation> updatedList = new ArrayList<>();
 

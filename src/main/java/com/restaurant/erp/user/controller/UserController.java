@@ -24,19 +24,19 @@ public class UserController {
 
     private final UserService userService;
 
-    @PostMapping("/api/auth/login")
+    @PostMapping({"/api/auth/login", "/api/users/login"})
     @Operation(summary = "Đăng nhập tài khoản")
     public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(ApiResponse.success(userService.loginUser(request), "Đăng nhập thành công"));
     }
 
-    @PostMapping("/api/auth/refresh")
+    @PostMapping({"/api/auth/refresh", "/api/users/refresh"})
     @Operation(summary = "Làm mới Access Token")
     public ResponseEntity<ApiResponse<AuthResponse>> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
         return ResponseEntity.ok(ApiResponse.success(userService.refreshTokenUser(request), "Cấp mới token thành công"));
     }
 
-    @PostMapping("/api/auth/register")
+    @PostMapping({"/api/auth/register", "/api/users/register"})
     @Operation(summary = "Đăng ký tài khoản người dùng")
     public ResponseEntity<ApiResponse<UserResponse>> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.ok(ApiResponse.success(userService.registerUser(request), "Đăng ký người dùng thành công"));

@@ -13,6 +13,8 @@ import com.restaurant.erp.menu.entity.MenuItem;
 import com.restaurant.erp.menu.repository.CategoryRepository;
 import com.restaurant.erp.menu.repository.MenuItemRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +28,7 @@ public class MenuService {
     private final MenuItemRepository menuItemRepository;
     private final CategoryRepository categoryRepository;
 
+    @Cacheable(value = "categories", key = "'all'")
     public List<CategoryResponse> getCategoryResponses() {
         return categoryRepository.findAll().stream()
                 .map(cat -> {
@@ -47,6 +50,7 @@ public class MenuService {
     }
 
     @Transactional
+    @CacheEvict(value = "categories", allEntries = true)
     public CategoryResponse createCategory(CreateCategoryRequest request) {
         Category category = Category.builder()
                 .name(request.getName().trim())
@@ -62,6 +66,7 @@ public class MenuService {
     }
 
     @Transactional
+    @CacheEvict(value = "categories", allEntries = true)
     public CategoryResponse updateCategory(Integer id, UpdateCategoryRequest request) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + id));
@@ -88,6 +93,7 @@ public class MenuService {
         return mapCategoryToDto(categoryRepository.save(category));
     }
 
+    @Cacheable(value = "menuItems", key = "#categoryId != null ? #categoryId : 'all'")
     public List<MenuItemResponse> getMenuItemResponses(Integer categoryId) {
         List<MenuItem> items = (categoryId != null)
                 ? menuItemRepository.findByCategoryId(categoryId)
@@ -103,6 +109,7 @@ public class MenuService {
     }
 
     @Transactional
+    @CacheEvict(value = {"menuItems", "categories"}, allEntries = true)
     public MenuItemResponse createMenuItem(CreateMenuItemRequest request) {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + request.getCategoryId()));
@@ -120,6 +127,7 @@ public class MenuService {
     }
 
     @Transactional
+    @CacheEvict(value = {"menuItems", "categories"}, allEntries = true)
     public MenuItemResponse updateMenuItem(Integer id, UpdateMenuItemRequest request) {
         MenuItem item = menuItemRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("MenuItem not found with id: " + id));

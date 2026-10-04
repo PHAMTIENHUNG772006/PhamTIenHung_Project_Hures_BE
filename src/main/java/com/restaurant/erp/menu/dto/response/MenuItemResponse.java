@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 
 @Data
@@ -15,7 +16,8 @@ import java.math.BigDecimal;
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Schema(description = "Thông tin chi tiết món ăn")
-public class MenuItemResponse {
+public class MenuItemResponse implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     @Schema(description = "ID món ăn", example = "1")
     private Integer id;

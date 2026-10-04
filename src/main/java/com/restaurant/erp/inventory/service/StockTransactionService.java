@@ -14,6 +14,10 @@ import com.restaurant.erp.inventory.repository.StockTransactionRepository;
 import com.restaurant.erp.user.entity.User;
 import com.restaurant.erp.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import jakarta.persistence.OptimisticLockException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,6 +59,11 @@ public class StockTransactionService {
     }
 
     @Transactional
+    @Retryable(
+        retryFor = {OptimisticLockException.class, ObjectOptimisticLockingFailureException.class},
+        maxAttempts = 3,
+        backoff = @Backoff(delay = 100, multiplier = 2)
+    )
     public StockTransactionResponse createImport(CreateStockTransactionRequest request, String userUsername) {
         Integer branchId = getActiveBranchId();
         Branch branch = branchRepository.findById(branchId)
