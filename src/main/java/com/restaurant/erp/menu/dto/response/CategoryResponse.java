@@ -7,13 +7,16 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Schema(description = "Thông tin chi tiết danh mục món ăn")
-public class CategoryResponse {
+public class CategoryResponse implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     @Schema(description = "ID danh mục", example = "1")
     private Integer id;

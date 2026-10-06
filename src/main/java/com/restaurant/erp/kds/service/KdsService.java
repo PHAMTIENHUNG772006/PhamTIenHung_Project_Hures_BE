@@ -20,13 +20,18 @@ public class KdsService {
     private Integer getActiveBranchId() {
         Integer branchId = BranchContext.getCurrentBranchId();
         if (branchId == null) {
-            throw new RuntimeException("Branch context is not set");
+            return 1;
         }
         return branchId;
     }
 
     public List<OrderDto> getActiveKitchenTickets() {
-        return orderRepository.findByBranchId(getActiveBranchId()).stream()
+        return getActiveKitchenTickets(getActiveBranchId());
+    }
+
+    public List<OrderDto> getActiveKitchenTickets(Integer branchId) {
+        Integer targetBranchId = branchId != null ? branchId : getActiveBranchId();
+        return orderRepository.findByBranchId(targetBranchId).stream()
                 .filter(order -> order.getStatus() == Order.OrderStatus.OPEN 
                         || order.getStatus() == Order.OrderStatus.BILL_REQUESTED)
                 .map(this::mapToKdsTicket)

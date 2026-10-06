@@ -1,5 +1,6 @@
 package com.restaurant.erp.pos.controller;
 
+import com.restaurant.erp.common.annotation.Idempotent;
 import com.restaurant.erp.common.response.ApiResponse;
 import com.restaurant.erp.pos.dto.request.CreateOrderItemRequest;
 import com.restaurant.erp.pos.dto.request.CreateOrderRequest;
@@ -42,6 +43,7 @@ public class OrderController {
     }
 
     @PostMapping
+    @Idempotent
     @Operation(summary = "Tạo đơn hàng mới tại bàn với validation")
     public ResponseEntity<ApiResponse<OrderResponse>> createOrder(@Valid @RequestBody CreateOrderRequest request) {
         return ResponseEntity.ok(ApiResponse.success(orderService.createOrder(request), "Tạo đơn hàng thành công"));
